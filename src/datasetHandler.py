@@ -4,26 +4,32 @@ import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch.utils.data as tud
+import torchvision.transforms as transforms
+from PIL import Image
+
+def load_image(image_path):
+    image = Image.open(image_path)
+    # Transforme a imagem em um tensor
+    transform = transforms.Compose([transforms.ToTensor()])
+    image_tensor = transform(image)
+    return image_tensor
 
 class ImageClassificationDataset(tud.Dataset):
-    def __int__(self, data_path):
-        self.dataframe = pd.read_csv(data_path, index_col=0)    
+    def __init__(self, data_path):
+        super().__init__()
+        self.dataframe = pd.read_csv(data_path)    
         
     def __len__(self):
         return len(self.dataframe.index)
         
         
     def __getitem__(self, index):
-        
         item = self.dataframe.loc[index]
 
-        input_data = ""
-        target_data = ""
+        input_data = load_image(item["path"])
+        target_data = th.from_numpy(np.array([int(item["label"])]))
 
-        return {
-            "image": input_data,
-            "label": target_data
-        }
+        return input_data, target_data
 
 class ImageClassificationDataModule(pl.LightningDataModule):
     def __init__(
@@ -33,17 +39,22 @@ class ImageClassificationDataModule(pl.LightningDataModule):
         pin_memory,
         train_set_path,
         validation_set_path,
+        test_set_path
 
     ):
+        super().__init__()
+
         self.batch_size = batch_size
         self.n_workers = n_workers
         self.pin_memory = pin_memory
         self.train_set_path = train_set_path
         self.validation_set_path = validation_set_path
+        self.test_set_path = test_set_path
 
     def setup(self, stage):
         self.train_set = ImageClassificationDataset(self.train_set_path)
-        self.test_set = ImageClassificationDataset(self.validation_set_path)
+        self.val_set = ImageClassificationDataset(self.validation_set_path)
+        self.test_set = ImageClassificationDataset(self.test_set_path)
 
     def train_dataloader(self):
         return tud.DataLoader(self.train_set,
@@ -58,3 +69,10 @@ class ImageClassificationDataModule(pl.LightningDataModule):
                             pin_memory=self.pin_memory,
                             shuffle=False,
                             num_workers=self.n_workers)
+    
+    def test_dataloader(self):
+        return tud.DataLoader(self.test_set,
+                              batch_size=1,
+                              pin_memory=self.pin_memory,
+                              shuffle=False,
+                              num_workers=self.n_workers)
