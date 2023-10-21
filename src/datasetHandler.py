@@ -76,3 +76,20 @@ class ImageClassificationDataModule(pl.LightningDataModule):
                               pin_memory=self.pin_memory,
                               shuffle=False,
                               num_workers=self.n_workers)
+    
+
+# img = ImageClassificationDataset("data/train.csv").__getitem__(0)
+# print(img[0].shape)
+
+# dataset = pd.read_csv("data/test.csv")
+
+# tam = len(dataset.index)
+
+# #check if all the images have 3 channels if not remove them from the folder
+
+# for i in range(tam):
+#     img = Image.open(dataset["path"][i])
+#     if img.mode != "RGB":
+#         os.remove(dataset["path"][i])
+#         #dataset.drop(i, inplace=True)
+        
