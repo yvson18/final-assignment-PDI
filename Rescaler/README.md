@@ -2,26 +2,34 @@
 
 ## Available modes
 - [x] Downsample
-- [ ] Upsample
+- [x] Upsample
 
 ## Available methods
 - [x] Bilinear
 - [x] Bicubic
 - [x] Lanczos
-- [ ] GFPGAN
+- [x] GFPGAN
 - [ ] PULSE
 
+## Authenticating with Replica
+To utilize the GFPGAN upscaling feature, authentication with Replica's API is required. Instructions for exporting your Replica token can be found [here](https://replicate.com/docs/get-started/python#authenticate).
+
 ## Usage
-Install the Tkinter (Tk) and OpenCV packages and run the python file:
+
+### Option 1: Running with Python
+Ensure you have the required packages installed: Tkinter (Tk), OpenCV, Replicate, and Requests.
+Run the Python script with the following command:
 ```
 python rescaler.py
 ```
 
-Or, avoid installing any packages by running the executable directly:
+### Option 2: Executable
+Avoid installing any packages by running the standalone executable directly:
 ```
 .\rescaler.exe
 ```
 
+## Optional Flags
 The application supports the following optional flags for specifying parameters before execution:
 ```
 options:
@@ -29,7 +37,7 @@ options:
   --mode {downscale,upscale}
                         Specify the mode (downscale or upscale)
   --factor FACTOR       Scaling factor for resizing
-  --method {bilinear,bicubic,lanczos}
+  --method {bilinear,bicubic,lanczos,gfpgan,pulse}
                         Resampling method
   --root ROOT           Root directory containing the images
 ```

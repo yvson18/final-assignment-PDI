@@ -1,7 +1,8 @@
 from utils import *
 from downscaler import *
+from upscaler import *
 
-if __name__ == "__main__":
+def main():
     args = get_args()
 
     if args['root'] is None:
@@ -20,3 +21,8 @@ if __name__ == "__main__":
 
     if mode == "downscale":
         downscale_imgs(img_paths, root, factor, method)
+    if mode == "upscale":
+        upscale_imgs(img_paths, root, factor, method)
+
+if __name__ == "__main__":
+    main()
