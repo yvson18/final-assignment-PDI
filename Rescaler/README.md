@@ -1,8 +1,8 @@
 # Image Rescaling Application
 
 ## Available modes
-- [x] Downsample
-- [x] Upsample
+- [x] Downscale
+- [x] Upscale
 
 ## Available methods
 - [x] Bilinear
