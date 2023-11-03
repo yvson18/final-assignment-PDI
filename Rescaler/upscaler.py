@@ -18,33 +18,27 @@ def cv_upscale_imgs(img_paths, old_root, new_root, factor, method):
     end_t = time()
     print("Upscale finished.")
     print("Elapsed time: {:.6f} seconds".format(end_t - start_t))
+    input()
 
-def start_gfpgan_predicts(img_paths, model_version, version_input, scale_input):
+def start_model_predicts(img_paths, model_version, version_input, scale_input, method):
+    scale_factor = scale_input
+    if method == "real-esrgan":
+        scale_factor /= 2
     predict_ids_paths = {}
-    scale_input = 2*scale_input # requiered due to API bug
     for img_path in img_paths:
         predict = replicate.predictions.create(
             version=model_version,
-            input={"img": open(img_path, "rb"), "version": version_input, "scale": scale_input}
+            input={"img": open(img_path, "rb"), "version": version_input, "scale": scale_factor}
         )
         predict_ids_paths[predict.id] = img_path
     return predict_ids_paths
 
-def gfpgan_upscale_imgs(img_paths, old_root, new_root, factor):
-    print("Starting Upscale...")
-    start_t = time()
-
-    client = replicate.Client(api_token=os.environ["REPLICATE_API_TOKEN"])
-    model = replicate.models.get("tencentarc/gfpgan")
-    model_version = model.versions.get("9283608cc6b7be6b65a8e44983db012355fde4132009bf99d976b2f0896856a3")
-    v = "v1.4"
-
-    predict_ids_paths = start_gfpgan_predicts(img_paths, model_version, v, factor)
-
-    failed_upscale = []
-    finished_predict = None
-    failed_predict = None
-    while True:
+def wait_model_predicts(client, predict_ids_paths, old_root, new_root):
+    succeeded_path_url = []
+    failed_path = []
+    while predict_ids_paths:
+        finished_predict = None
+        failed_predict = None
         for id, _ in predict_ids_paths.items():
             prediction = client.predictions.get(id)
             if prediction.status == "succeeded":
@@ -55,26 +49,53 @@ def gfpgan_upscale_imgs(img_paths, old_root, new_root, factor):
                 break
         if finished_predict:
             img_path = predict_ids_paths[finished_predict.id]
+            img_url = finished_predict.output
             new_relpath = build_relpath(img_path, old_root, new_root)
-            save_url_img(finished_predict.output, new_relpath)
+            download_img_from_url(img_url, new_relpath)
+            succeeded_path_url.append((img_path, img_url))
             del predict_ids_paths[finished_predict.id]
-            finished_predict = None
         elif failed_predict:
             img_path = predict_ids_paths[failed_predict.id]
-            failed_upscale.append(img_path)
+            failed_path.append(img_path)
             del predict_ids_paths[failed_predict.id]
-            failed_predict = None
-        if not predict_ids_paths:
-            break
-        sleep(2)
+    return succeeded_path_url, failed_path
 
-    end_t = time()
-    print("Upscale finished.")
-    print("Elapsed time: {:.6f} seconds".format(end_t - start_t))
-    if failed_upscale:
-        print(f"Failed to Upscale:")
-        for f in failed_upscale:
-            print(f)
+def ia_upscale_imgs(img_paths, old_root, new_root, factor, method):
+    ia_models_dict = {
+        "gfpgan": {
+            "model": "tencentarc/gfpgan",
+            "model_version": "9283608cc6b7be6b65a8e44983db012355fde4132009bf99d976b2f0896856a3",
+            "version": "v1.4"
+        },
+        "real-esrgan": {
+            "model": "xinntao/realesrgan",
+            "model_version": "1b976a4d456ed9e4d1a846597b7614e79eadad3032e9124fa63859db0fd59b56",
+            "version": "General - v3"
+        }
+    }
+
+    client = replicate.Client(api_token=os.environ["REPLICATE_API_TOKEN"])
+    model = replicate.models.get(ia_models_dict[method]["model"])
+    model_version = model.versions.get(ia_models_dict[method]["model_version"])
+    v = ia_models_dict[method]["version"]
+
+    while True:
+        print("Starting Upscale...")
+        start_t = time()
+        predict_ids_paths = start_model_predicts(img_paths, model_version, v, factor, method)
+        succeeded_path_url, failed_path = wait_model_predicts(client, predict_ids_paths, old_root, new_root)
+        end_t = time()
+        print("Upscale finished.")
+        print("Elapsed time: {:.6f} seconds".format(end_t - start_t))
+        input()
+        if failed_path:
+            print(f"Failed to Upscale:")
+            for f in failed_path:
+                print(f)
+            c = input("Would you like to try again? (y|Y): ")
+            if c in ["y", "Y"]:
+                continue
+        break
 
 def upscale_imgs(img_paths, root, factor, method):
     new_root = ".\\upscaler_out"
@@ -86,5 +107,5 @@ def upscale_imgs(img_paths, root, factor, method):
 
     if method in ["bilinear", "bicubic", "lanczos"]:
         cv_upscale_imgs(img_paths, root, new_root, factor, method)
-    if method == "gfpgan":
-        gfpgan_upscale_imgs(img_paths, root, new_root, factor)
+    if method in ["gfpgan", "real-esrgan"]:
+        ia_upscale_imgs(img_paths, root, new_root, factor, method)

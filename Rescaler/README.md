@@ -9,10 +9,10 @@
 - [x] Bicubic
 - [x] Lanczos
 - [x] GFPGAN
-- [ ] PULSE
+- [x] Real-ESRGAN
 
 ## Authenticating with Replica
-To utilize the GFPGAN upscaling feature, authentication with Replica's API is required. Instructions for exporting your Replica token can be found [here](https://replicate.com/docs/get-started/python#authenticate).
+To utilize the GFPGAN and Real-ESRGAN upscaling, authentication with Replica's API is required. Instructions for exporting your Replica token can be found [here](https://replicate.com/docs/get-started/python#authenticate).
 
 ## Usage
 
@@ -37,7 +37,7 @@ options:
   --mode {downscale,upscale}
                         Specify the mode (downscale or upscale)
   --factor FACTOR       Scaling factor for resizing
-  --method {bilinear,bicubic,lanczos,gfpgan,pulse}
+  --method {bilinear,bicubic,lanczos,gfpgan,real-esrgan}
                         Resampling method
   --root ROOT           Root directory containing the images
 ```
