@@ -37,3 +37,4 @@ def downscale_imgs(img_paths, old_root, factor, method):
         print(f"Failed to Downscale:")
         for f in failed_downscale:
             print(f)
+    input()
