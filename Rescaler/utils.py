@@ -2,8 +2,10 @@ import os
 import cv2
 import pathlib
 import argparse
+import requests
+import replicate
 import numpy as np
-from time import time
+from time import time, sleep
 from tkinter import Tk, filedialog
 
 def sys_clear():
@@ -16,7 +18,7 @@ def get_args():
     parser = argparse.ArgumentParser(description="Image Rescaling Application")
     parser.add_argument("--mode", required=False, choices=["downscale", "upscale"], help="Specify the mode (downscale or upscale)")
     parser.add_argument("--factor", required=False, type=float, help="Scaling factor for resizing")
-    parser.add_argument("--method", required=False, choices=["bilinear", "bicubic", "lanczos"], help="Resampling method")
+    parser.add_argument("--method", required=False, choices=["bilinear", "bicubic", "lanczos", "gfpgan", "pulse"], help="Resampling method")
     parser.add_argument("--root", required=False, help="Root directory containing the images")
     args = parser.parse_args()
     return vars(args)
@@ -51,10 +53,12 @@ def provide_factor(args):
     args['factor'] = float(factor)
 
 def print_methods(mode):
-    if mode == "downscale":
-        print("1 - Bilinear")
-        print("2 - Bicubic")
-        print("3 - Lanczos")
+    print("1 - Bilinear")
+    print("2 - Bicubic")
+    print("3 - Lanczos")
+    if mode == "upscale":
+        print("4 - GFPGAN")
+        print("5 - PULSE")
 
 def choose_method(args):
     methods_dict = {
@@ -63,7 +67,13 @@ def choose_method(args):
             '2': "bicubic",
             '3': "lanczos",
         },
-        "upscale": ""
+        "upscale": {
+            '1': "bilinear",
+            '2': "bicubic",
+            '3': "lanczos",
+            '4': "gfpgan",
+            '5': "pulse",
+        }
     }
     mode = args['mode']
     while True:
@@ -112,6 +122,12 @@ def read_img(path):
     img = cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
     return img
 
-def rescale_img(img, scale_factor, method):
+def cv_rescale_img(img, scale_factor, method):
     new_img = cv2.resize(img, None, fx=scale_factor, fy=scale_factor, interpolation=method)
     return new_img
+
+def save_url_img(img_url, path):
+    response = requests.get(img_url)
+    if response.status_code == 200:
+        with open(path, "wb") as file:
+            file.write(response.content)
