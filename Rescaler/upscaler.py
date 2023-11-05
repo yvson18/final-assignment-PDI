@@ -35,7 +35,7 @@ def start_model_predicts(img_paths, model_version, version_input, scale_input, m
 
 def wait_model_predicts(client, predict_ids_paths, old_root, new_root):
     succeeded_path_url = []
-    failed_path = []
+    failed_paths = []
     while predict_ids_paths:
         finished_predict = None
         failed_predict = None
@@ -56,9 +56,9 @@ def wait_model_predicts(client, predict_ids_paths, old_root, new_root):
             del predict_ids_paths[finished_predict.id]
         elif failed_predict:
             img_path = predict_ids_paths[failed_predict.id]
-            failed_path.append(img_path)
+            failed_paths.append(img_path)
             del predict_ids_paths[failed_predict.id]
-    return succeeded_path_url, failed_path
+    return succeeded_path_url, failed_paths
 
 def ia_upscale_imgs(img_paths, old_root, new_root, factor, method):
     ia_models_dict = {
@@ -79,21 +79,23 @@ def ia_upscale_imgs(img_paths, old_root, new_root, factor, method):
     model_version = model.versions.get(ia_models_dict[method]["model_version"])
     v = ia_models_dict[method]["version"]
 
+    imgs_to_predict = img_paths
     while True:
         print("Starting Upscale...")
         start_t = time()
-        predict_ids_paths = start_model_predicts(img_paths, model_version, v, factor, method)
-        succeeded_path_url, failed_path = wait_model_predicts(client, predict_ids_paths, old_root, new_root)
+        predict_ids_paths = start_model_predicts(imgs_to_predict, model_version, v, factor, method)
+        succeeded_path_url, failed_paths = wait_model_predicts(client, predict_ids_paths, old_root, new_root)
         end_t = time()
         print("Upscale finished.")
         print("Elapsed time: {:.6f} seconds".format(end_t - start_t))
         input()
-        if failed_path:
+        if failed_paths:
             print(f"Failed to Upscale:")
-            for f in failed_path:
+            for f in failed_paths:
                 print(f)
             c = input("Would you like to try again? (y|Y): ")
             if c in ["y", "Y"]:
+                imgs_to_predict = failed_paths
                 continue
         break
 
